@@ -19,26 +19,26 @@ df = load_data()
 countries = df["Country"].sort_values().tolist()
 selected_country = st.selectbox("국가를 선택하세요", countries)
 
-# 선택한 국가 데이터만 필터링
+# 선택한 국가만 추출
 row = df[df["Country"] == selected_country].iloc[0]
 
-# MBTI 데이터만 추출
+# MBTI 16유형 데이터만 분리
 mbti_cols = [c for c in df.columns if c != "Country"]
 values = row[mbti_cols].values
 mbti_df = pd.DataFrame({"MBTI": mbti_cols, "Value": values})
 
-# 1등 MBTI 찾기
+# 1등 유형 찾기
 top_type = mbti_df.loc[mbti_df["Value"].idxmax(), "MBTI"]
 
-# 색상 설정
+# 색상 지정 (1등만 빨간색, 나머지는 블루 그라데이션 느낌)
 colors = []
 for mbti in mbti_df["MBTI"]:
     if mbti == top_type:
         colors.append("red")
     else:
-        colors.append("rgba(0, 123, 255, 0.6)")  # 파란 계열 그라데이션 느낌
+        colors.append("rgba(0, 123, 255, 0.6)")
 
-# Plotly 그리기
+# Plotly 바 차트 생성
 fig = px.bar(
     mbti_df,
     x="MBTI",
