@@ -1,63 +1,54 @@
 import streamlit as st
+import pandas as pd
+import plotly.express as px
 
-# ---------------------- 기본 설정 ----------------------
-st.set_page_config(page_title="Baskin Kiosk 🍨", page_icon="🍦")
-st.title("🍦 베스킨라빈스 키오스크")
-st.write("어서오세요! 주문을 도와드릴게요 😊")
+st.set_page_config(page_title="MBTI by Country", layout="wide")
 
-# ---------------------- Step 1: 매장/포장 ----------------------
-st.header("1️⃣ 매장에서 드시나요, 포장해 가시나요?")
-eat_type = st.radio("선택해주세요:", ["매장", "포장"])
+st.title("🌍 국가별 MBTI 비율 시각화")
+st.write("원하는 국가를 선택하면 MBTI 16유형 비율을 인터랙티브 바 차트로 확인할 수 있습니다.")
 
-# ---------------------- Step 2: 용기 선택 ----------------------
-st.header("2️⃣ 어떤 용기를 원하시나요?")
-container = st.selectbox(
-    "용기를 선택하세요:",
-    [
-        "싱글컵 (1가지 맛) - 3,500원",
-        "더블컵 (2가지 맛) - 6,000원",
-        "파인트 (3가지 맛) - 8,200원",
-        "쿼터 (4가지 맛) - 15,000원",
-    ]
+# CSV 불러오기
+@st.cache_data
+def load_data():
+    df = pd.read_csv("countriesMBTI_16types.csv")
+    return df
+
+df = load_data()
+
+# 국가 선택
+countries = df["Country"].sort_values().tolist()
+selected_country = st.selectbox("국가를 선택하세요", countries)
+
+# 선택한 국가 데이터만 필터링
+row = df[df["Country"] == selected_country].iloc[0]
+
+# MBTI 데이터만 추출
+mbti_cols = [c for c in df.columns if c != "Country"]
+values = row[mbti_cols].values
+mbti_df = pd.DataFrame({"MBTI": mbti_cols, "Value": values})
+
+# 1등 MBTI 찾기
+top_type = mbti_df.loc[mbti_df["Value"].idxmax(), "MBTI"]
+
+# 색상 설정
+colors = []
+for mbti in mbti_df["MBTI"]:
+    if mbti == top_type:
+        colors.append("red")
+    else:
+        colors.append("rgba(0, 123, 255, 0.6)")  # 파란 계열 그라데이션 느낌
+
+# Plotly 그리기
+fig = px.bar(
+    mbti_df,
+    x="MBTI",
+    y="Value",
+    color=mbti_df["MBTI"],
+    color_discrete_sequence=colors,
+    title=f"{selected_country} MBTI 비율",
 )
 
-# 용기별 맛 개수와 가격 매핑
-container_info = {
-    "싱글컵 (1가지 맛) - 3,500원": (1, 3500),
-    "더블컵 (2가지 맛) - 6,000원": (2, 6000),
-    "파인트 (3가지 맛) - 8,200원": (3, 8200),
-    "쿼터 (4가지 맛) - 15,000원": (4, 15000),
-}
-num_flavors, base_price = container_info[container]
+fig.update_traces(marker_line_width=1.5, marker_line_color="black")
+fig.update_layout(showlegend=False)
 
-# ---------------------- Step 3: 맛 선택 ----------------------
-st.header(f"3️⃣ 아이스크림 맛을 {num_flavors}가지 골라주세요 🍨")
-
-flavor_list = [
-    "베리베리 스트로베리", "민트초코칩", "아몬드봉봉", "바람과 함께 사라지다",
-    "뉴욕치즈케이크", "슈팅스타", "초콜릿", "바닐라", "레인보우샤베트",
-]
-
-selected_flavors = []
-for i in range(num_flavors):
-    flavor = st.selectbox(f"맛 {i+1}", flavor_list, key=f"flavor_{i}")
-    selected_flavors.append(flavor)
-
-# ---------------------- Step 4: 결제 ----------------------
-st.header("4️⃣ 결제 방법을 선택해주세요 💳")
-payment = st.radio("결제 방식:", ["현금", "카드", "기프티콘"])
-
-if payment == "기프티콘":
-    gift_num = st.text_input("기프티콘 번호를 입력해주세요 (하이픈 없이)")
-    if gift_num:
-        st.write(f"🎟 입력된 번호: {gift_num}")
-
-# ---------------------- Step 5: 전체 요약 ----------------------
-st.header("✨ 주문 요약")
-st.write(f"📍 **이용 방식:** {eat_type}")
-st.write(f"🥄 **용기:** {container}")
-st.write(f"🍨 **선택한 맛:** {', '.join(selected_flavors)}")
-st.write(f"💰 **총 가격:** {base_price}원")
-st.write(f"💳 **결제 방식:** {payment}")
-
-st.success("주문이 완료되었습니다! 맛있게 드세요 😊🍦✨")
+st.plotly_chart(fig, use_container_width=True)
