@@ -15,22 +15,26 @@ def load_data():
 
 df = load_data()
 
-# 국가 선택
+# 국가 목록
 countries = df["Country"].sort_values().tolist()
 selected_country = st.selectbox("국가를 선택하세요", countries)
 
-# 선택한 국가만 추출
+# 선택 국가 데이터
 row = df[df["Country"] == selected_country].iloc[0]
 
-# MBTI 16유형 데이터만 분리
+# MBTI 목록만 추출
 mbti_cols = [c for c in df.columns if c != "Country"]
 values = row[mbti_cols].values
-mbti_df = pd.DataFrame({"MBTI": mbti_cols, "Value": values})
 
-# 1등 유형 찾기
+mbti_df = pd.DataFrame({
+    "MBTI": mbti_cols,
+    "Value": values
+})
+
+# 1등 찾기
 top_type = mbti_df.loc[mbti_df["Value"].idxmax(), "MBTI"]
 
-# 색상 지정 (1등만 빨간색, 나머지는 블루 그라데이션 느낌)
+# 색깔 설정 (1등 빨강, 나머지 블루 계열)
 colors = []
 for mbti in mbti_df["MBTI"]:
     if mbti == top_type:
@@ -38,14 +42,14 @@ for mbti in mbti_df["MBTI"]:
     else:
         colors.append("rgba(0, 123, 255, 0.6)")
 
-# Plotly 바 차트 생성
+# Plotly 막대 그래프
 fig = px.bar(
     mbti_df,
     x="MBTI",
     y="Value",
     color=mbti_df["MBTI"],
     color_discrete_sequence=colors,
-    title=f"{selected_country} MBTI 비율",
+    title=f"{selected_country} MBTI 비율"
 )
 
 fig.update_traces(marker_line_width=1.5, marker_line_color="black")
